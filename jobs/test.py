@@ -137,4 +137,26 @@ env.execute("test_job")"""
 
 # windowed.print()
 # env.execute("test_job")
-
+
+
+# Process Function
+
+
+from pyflink.datastream import StreamExecutionEnvironment
+from pyflink.datastream import ProcessFunction
+
+env = StreamExecutionEnvironment.get_execution_environment()
+
+data = [10, 20, 30, 40, 50]
+
+ds = env.from_collection(
+    collection = data,  
+)
+class MyProcessFunction(ProcessFunction):
+    def process_element(self,value,ctx):
+        if value > 25:
+            return [f"ALERT: {value}"]
+process = ds.process(MyProcessFunction())
+process.print()
+env.execute("test_job")
+

@@ -81,3 +81,43 @@ c:/Users/tb619/Videos/Projects/kafka/
 ```
 
 ---
+
+## 🚀 Getting Started
+
+### Prerequisites
+Make sure you have the following installed on your system:
+- **Docker & Docker Compose**
+- **Python 3.11+**
+
+---
+
+### Step 1: Start the Infrastructure
+Spin up Zookeeper, Kafka, Flink JobManager, and Flink TaskManager:
+```bash
+docker-compose up -d
+```
+Verify they are running by checking `docker ps`. You can access the **Flink Web Dashboard** at `http://localhost:8081`.
+
+---
+
+### Step 2: Build the PyFlink Container
+We need a custom Flink image equipped with Python 3 and PyFlink libraries to execute our stream-processing jobs:
+```bash
+# Build the image
+docker build -f docker/Dockerfile.flink --no-cache -t pyflink:latest .
+
+# Run the PyFlink interactive container mounting the jobs folder
+docker run -it -v ${PWD}/jobs:/app/jobs pyflink:latest /bin/bash
+```
+
+---
+
+### Step 3: Run the Telemetry Streams
+
+#### Option A: Stream Combined Radiosonde Data
+Run the combined producer locally on your host environment to parse weather balloon logs and stream them to Kafka:
+```bash
+# Setup virtual environment and dependencies
+python -m venv .venv
+source .venv/bin/activate  # Or .venv\Scripts\activate on Windows
+pip install -r requirements.txt

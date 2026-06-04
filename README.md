@@ -8,31 +8,32 @@ The primary data flow streams telemetry from atmospheric weather balloons (radio
 
 ## 🏗️ Architecture & Data Flow
 
+
 ```mermaid
 graph TD
-    subgraph Local Data Sources
+    subgraph LDS ["Local Data Sources"]
         BL["Boundary Layer Data<br/>boundary_layer_data_altreport.txt"]
         SIM["Flight Simulation Data<br/>radiosonde_sim_RS92SGP.txt"]
     end
 
-    subgraph Producers (Python Host)
+    subgraph PPH ["Producers (Python Host)"]
         P_Comb["Combined Producer<br/>combined_producer.py"]
         P_Rider["Rider Producer<br/>producer.py"]
     end
 
-    subgraph Streaming Broker (Docker)
+    subgraph SBD ["Streaming Broker (Docker)"]
         K_Broker[Kafka Broker]
         T_Sonde[Topic: radio-sonde]
         T_Rider[Topic: rider-updates]
     end
 
-    subgraph Processing Cluster (Docker)
+    subgraph PCD ["Processing Cluster (Docker)"]
         F_JM[Flink JobManager]
         F_TM[Flink TaskManager]
         PyFlink_C["PyFlink Consumer<br/>flink_consumer.py"]
     end
 
-    subgraph Output Dest
+    subgraph OD ["Output Dest"]
         Log["Received Message Log<br/>received.txt"]
         Cons[Stdout / Print Sink]
     end
@@ -48,6 +49,7 @@ graph TD
     PyFlink_C <--> F_JM
     PyFlink_C --> Cons
 ```
+
 
 ---
 

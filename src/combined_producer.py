@@ -387,3 +387,5 @@ finally:
     logger.info("⏳ Flushing remaining messages...")
     producer.flush()
     logger.info(f"✅ Done — {messages_sent} / {matched_count} messages sent")
+
+# End of radiosonde combined telemetry producer. Ready for production.

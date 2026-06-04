@@ -1,0 +1,12 @@
+Build the Docker image
+-> docker build -f docker/Dockerfile.flink --no-cache -t pyflink:latest .
+Remove old container
+->docker rm pyflink-container
+Run the container interactively
+->docker run -it --name pyflink-container pyflink:latest /bin/bash
+Mount host jobs folder to container
+->docker run -it -v ${PWD}/jobs:/app/jobs pyflink:latest /bin/bash   # this create a new container using flink imag
+->docker exec -it pyflink /bin/bash
+
+Run Flink jobs
+->python3 /app/jobs/flink_consumer.py

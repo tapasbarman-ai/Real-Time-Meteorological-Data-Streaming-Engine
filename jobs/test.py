@@ -112,4 +112,29 @@ watermark = WatermarkStrategy.for_bounded_out_of_orderness(Duration.of_seconds(5
 stream = ds.assign_timestamps_and_watermarks(watermark)
 
 stream.print()
-env.execute("test_job")"""
+env.execute("test_job")"""
+
+# Window Processing
+
+# from pyflink.datastream.window import TumblingEventTimeWindows
+# from pyflink.common.typeinfo import Types
+# from pyflink.datastream import StreamExecutionEnvironment
+# from pyflink.common.time import Time
+
+# env = StreamExecutionEnvironment.get_execution_environment()
+# data = [
+#         ("A",10),
+#         ("A",20),
+#         ("A",50)
+#     ]
+# ds = env.from_collection(
+#     collection = data,
+#     type_info = Types.TUPLE([Types.STRING(), Types.INT()])
+# )
+
+
+# windowed = ds.key_by(lambda x: x[0]).window(TumblingEventTimeWindows.of(Time.seconds(5))).reduce(lambda a,b: (a[0], a[1]+b[1]))
+
+# windowed.print()
+# env.execute("test_job")
+

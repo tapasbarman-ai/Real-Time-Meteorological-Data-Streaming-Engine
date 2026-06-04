@@ -1,0 +1,14 @@
+# Use official Flink image (has Flink installed)
+FROM flink:1.17.1-scala_2.12
+
+# Install Python3 & pip
+USER root
+RUN apt-get update -y && \
+    apt-get install -y python3 python3-pip python3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Symlink python
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Install PyFlink (matching Flink version)
+RUN pip3 install apache-flink==1.17.1

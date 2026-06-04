@@ -121,3 +121,38 @@ Run the combined producer locally on your host environment to parse weather ball
 python -m venv .venv
 source .venv/bin/activate  # Or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
+
+# Run the combined producer
+python src/combined_producer.py
+```
+This will parse the files inside `data/`, merge rows in real-time, stream them to Kafka under topic `radio-sonde`, and log them to `received.txt`.
+
+#### Option B: Stream Manual Rider Updates
+1. Programmatically create the `rider-updates` topic:
+   ```bash
+   python src/admin.py
+   ```
+2. Start the interactive producer:
+   ```bash
+   python src/producer.py
+   ```
+   *Example input:* `Bob,north` or `Alice,south`
+
+---
+
+### Step 4: Run Flink Stream Processing
+Inside your running `pyflink` Docker container, start the stream consumer to ingest the data from Kafka in real-time:
+```bash
+python3 /app/jobs/flink_consumer.py
+```
+This job connects to the Flink engine, loads the Kafka connector JAR, subscribes to the Kafka topic, and prints the incoming messages to standard output.
+
+---
+
+## 🛠️ PyFlink Playground & Testing
+If you are learning Flink, check out [jobs/test.py](file:///c:/Users/tb619/Videos/Projects/kafka/jobs/test.py). It includes standalone exercises demonstrating:
+1. **Map/Filter transformations** on streams.
+2. **Keyed Streams** (`key_by`).
+3. **Watermarking** for out-of-orderness.
+4. **Window processing** (Tumbling Event-Time Windows).
+5. **Process Functions** (applying custom logic/state management).

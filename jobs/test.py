@@ -86,4 +86,30 @@ keyed = ds.key_by(lambda x: x[0]) # key by name
 keyed.print()
 env.execute("test_job")
 """
-
+
+# Handeling late data with watermarks
+
+"""from pyflink.common.typeinfo import Types
+from pyflink.datastream import StreamExecutionEnvironment
+from pyflink.common.watermark_strategy import WatermarkStrategy
+from pyflink.common.time import Duration
+
+env = StreamExecutionEnvironment.get_execution_environment()
+
+data = [
+    (1000,10),
+    (2000,20),
+    (3000,30),
+    (4000,40),
+    (5000,50)
+]
+
+ds = env.from_collection(
+    collection = data,
+)
+
+watermark = WatermarkStrategy.for_bounded_out_of_orderness(Duration.of_seconds(5))
+stream = ds.assign_timestamps_and_watermarks(watermark)
+
+stream.print()
+env.execute("test_job")"""

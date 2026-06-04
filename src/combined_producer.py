@@ -316,4 +316,74 @@ logger.info("=================================================")
 logger.info("🔄 Streaming combined data — Ctrl+C to stop")
 logger.info("=================================================")
 
-
+
+# =========================================================
+# MAIN SEND LOOP — 1 merged row per second
+# =========================================================
+messages_sent = 0
+
+# ── File to save every sent message ──────────────────────
+RECEIVED_FILE = os.path.join(PROJECT_ROOT, "received.txt")
+logger.info(f"📝 Saving sent data to: {RECEIVED_FILE}")
+
+# Clear the file at start
+with open(RECEIVED_FILE, "w", encoding="utf-8") as rf:
+    rf.write(f"# Combined Producer — Sent Messages Log\n")
+    rf.write(f"# Started at: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
+    rf.write(f"# Total rows to send: {matched_count}\n")
+    rf.write("=" * 80 + "\n\n")
+
+try:
+    for i in range(matched_count):
+        bl_row  = bl_rows[i]
+        sim_row = sim_rows[i]
+
+        message = merge_row(bl_header, bl_row, sim_row)
+        message["event_time"] = datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        # Tag so consumers can identify the source
+        message["source"] = "combined"
+
+        payload = json.dumps(message, ensure_ascii=False).encode("utf-8")
+
+        producer.produce(
+            topic=KAFKA_TOPIC,
+            key=bl_header.get("sonde_serial_number", "unknown"),
+            value=payload,
+            callback=delivery_report,
+        )
+        producer.poll(0)
+
+        # ── Write to received.txt ─────────────────────────
+        with open(RECEIVED_FILE, "a", encoding="utf-8") as rf:
+            rf.write(f"--- Message #{messages_sent + 1} "
+                     f"| {message['event_time']} ---\n")
+            rf.write(json.dumps(message, indent=2, ensure_ascii=False))
+            rf.write("\n\n")
+
+        messages_sent += 1
+        logger.info(
+            f"📤 #{messages_sent:4d}/{matched_count} | "
+            f"Row={bl_row['row_n']:5d} | "
+            f"H={bl_row['height_msl_m']:8.1f}m | "
+            f"T={bl_row['temp_c']}°C | "
+            f"P={bl_row['pressure_mb']}mb | "
+            f"Frame={sim_row.get('frame_counter')} | "
+            f"Bat={sim_row.get('battery_mv')}mV | "
+            f"Sats={sim_row.get('sats_used')} | "
+            f"Phase={sim_row.get('phase')}"
+        )
+
+        time.sleep(SEND_INTERVAL_SEC)
+
+except KeyboardInterrupt:
+    logger.info("🛑 Stopped by user (Ctrl+C)")
+
+except Exception as e:
+    logger.exception(f"🔥 Fatal error: {e}")
+
+finally:
+    logger.info("⏳ Flushing remaining messages...")
+    producer.flush()
+    logger.info(f"✅ Done — {messages_sent} / {matched_count} messages sent")

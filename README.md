@@ -50,3 +50,34 @@ graph TD
 ```
 
 ---
+
+## 📂 Project Structure
+
+```text
+c:/Users/tb619/Videos/Projects/kafka/
+├── data/                       # Raw meteorological logs and flight simulations
+│   ├── boundary_layer_data_altreport_20220328_1431.txt
+│   └── radiosonde_sim_RS92SGP_20220328.txt
+├── docker/                     # Docker configuration files
+│   ├── Dockerfile              # Basic Python app container config
+│   └── Dockerfile.flink        # Custom PyFlink container (with python3 & apache-flink dependency)
+├── jobs/                       # Flink stream processing jobs
+│   ├── flink-sql-connector-kafka-1.17.1.jar  # Kafka connector dependency
+│   ├── flink_consumer.py       # PyFlink stream consumer from Kafka
+│   ├── test.py                 # PyFlink testing playground (maps, windows, watermarks)
+│   └── word_count.py           # Standard Flink word-count script
+├── scripts/
+│   └── flink_setup             # Script & instructions to run/deploy Flink containers
+├── src/                        # Data producers & admin scripts (Host/Client side)
+│   ├── producers/              # Isolated location producers (North, South, Random)
+│   ├── admin.py                # AdminClient script to programmatically create Kafka topics
+│   ├── client.py               # Shared Kafka bootstrap server & client configurations
+│   ├── combined_producer.py    # Integrates, parses, and streams the radiosonde telemetry
+│   ├── consumer.py             # Simple console consumer for rider-updates
+│   └── producer.py             # CLI driver for producing manual rider-updates
+├── docker-compose.yml          # Spins up Zookeeper, Kafka, and the Flink clusters
+├── requirements.txt            # Local Python dependencies
+└── received.txt                # Log of streamed combined producer payloads
+```
+
+---

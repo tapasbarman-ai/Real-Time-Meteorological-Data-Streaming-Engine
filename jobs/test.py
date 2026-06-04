@@ -66,4 +66,24 @@ ds = env.from_collection(
 
 filtered = ds.filter(lambda x:x >20)
 filtered.print()
-env.execute("test_job")"""
+env.execute("test_job")"""
+
+
+# keyed stream test
+
+"""from pyflink.common.typeinfo import Types
+from pyflink.datastream import StreamExecutionEnvironment
+
+env = StreamExecutionEnvironment.get_execution_environment()
+
+data = [("Alice", 10), ("Bob", 15), ("Alice", 20), ("Bob", 25), ("Alice", 30)]
+
+ds = env.from_collection(
+    collection = data,
+    type_info = Types.TUPLE([Types.STRING(), Types.INT()])
+)
+keyed = ds.key_by(lambda x: x[0]) # key by name
+keyed.print()
+env.execute("test_job")
+"""
+

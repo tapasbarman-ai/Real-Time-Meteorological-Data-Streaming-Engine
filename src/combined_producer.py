@@ -122,4 +122,117 @@ def parse_boundary_data(lines):
             continue
 
     return rows
+
+
+# =========================================================
+# PARSE RADIOSONDE SIM FILE
+# =========================================================
+def parse_sim_file(filepath):
+    """
+    Parse the tab-separated radiosonde_sim file.
+    Returns list of dicts, one per data row.
+    """
+    with open(filepath, "r", encoding="latin-1") as f:
+        content = f.read()
+
+    lines = content.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+
+    # First line is the header
+    header_cols = lines[0].split("\t")
+
+    rows = []
+    for i in range(1, len(lines)):
+        stripped = lines[i].strip()
+        if not stripped:
+            continue
+
+        values = lines[i].split("\t")
+        if len(values) < len(header_cols):
+            continue
+
+        row = {}
+        for col, val in zip(header_cols, values):
+            val = val.strip()
+            if val == "" or val == "N/A":
+                row[col] = None
+                continue
+            # Try numeric conversion
+            try:
+                if "." in val:
+                    row[col] = float(val)
+                else:
+                    row[col] = int(val)
+            except ValueError:
+                row[col] = val   # keep as string (e.g. phase, manufacturing_lot)
+        rows.append(row)
+
+    return rows
+
+
+# =========================================================
+# MERGE ONE BOUNDARY ROW + ONE SIM ROW → UNIFIED MESSAGE
+# =========================================================
+def merge_row(header, bl_row, sim_row):
+    """
+    Combine boundary-layer header, boundary-layer data row,
+    and radiosonde_sim data row into a single flat message.
+
+    Boundary-layer values take priority for overlapping measurements
+    (temp, pressure, humidity, wind) since they are the 'ground truth'
+    from the altreport file.  Sim fields fill in everything else.
+    """
+    msg = {}
+
+    # 1. Static header from boundary-layer file
+    msg.update(header)
+
+    # 2. All sim columns (renamed to match existing DB schema where needed)
+    msg["profile"]           = sim_row.get("profile")
+    msg["frame_counter"]     = sim_row.get("frame_counter")
+    msg["ascent_rate_ms"]    = sim_row.get("ascent_rate_ms")
+    msg["lat_deg"]           = sim_row.get("latitude")
+    msg["lon_deg"]           = sim_row.get("longitude")
+    msg["alt_m"]             = sim_row.get("altitude_m")
+    msg["vn_ms"]             = sim_row.get("vn_ms")
+    msg["ve_ms"]             = sim_row.get("ve_ms")
+    msg["vu_ms"]             = sim_row.get("vu_ms")
+    msg["battery_mv"]        = sim_row.get("battery_mv")
+    msg["tx_ma"]             = sim_row.get("tx_ma")
+    msg["system_temp_c"]     = sim_row.get("system_temp_c")
+    msg["sats_used"]         = sim_row.get("sats_used")
+    msg["fix_type"]          = sim_row.get("fix_type")
+    msg["pdop"]              = sim_row.get("pdop")
+    msg["hdop"]              = sim_row.get("hdop")
+    msg["vdop"]              = sim_row.get("vdop")
+    msg["gps_week"]          = sim_row.get("gps_week")
+    msg["tow_ms"]            = sim_row.get("tow_ms")
+    msg["cal_version"]       = sim_row.get("cal_version")
+    msg["pressure_offset"]   = sim_row.get("pressure_offset")
+    msg["temp_offset"]       = sim_row.get("temp_offset")
+    msg["humidity_offset"]   = sim_row.get("humidity_offset")
+    msg["rf_tune_id"]        = sim_row.get("rf_tune_id")
+    msg["manufacturing_lot"] = sim_row.get("manufacturing_lot")
+    msg["raw_rssi_dbm"]      = sim_row.get("raw_rssi_dbm")
+    msg["raw_snr_db"]        = sim_row.get("raw_snr_db")
+    msg["phase"]             = sim_row.get("phase")
+
+    # Sim also has temperature_c, pressure_hpa, relative_humidity_pct,
+    # wind_dir_deg, wind_speed_ms — store them as sim_* for reference
+    msg["sim_temperature_c"]       = sim_row.get("temperature_c")
+    msg["sim_pressure_hpa"]        = sim_row.get("pressure_hpa")
+    msg["sim_humidity_pct"]        = sim_row.get("relative_humidity_pct")
+    msg["sim_wind_dir_deg"]        = sim_row.get("wind_dir_deg")
+    msg["sim_wind_speed_ms"]       = sim_row.get("wind_speed_ms")
+
+    # 3. Boundary-layer measurements (ground truth, overwrites sim duplicates)
+    msg["row_n"]         = bl_row["row_n"]
+    msg["height_msl_m"]  = bl_row["height_msl_m"]
+    msg["temp_c"]        = bl_row["temp_c"]
+    msg["pressure_mb"]   = bl_row["pressure_mb"]
+    msg["rh_pct"]        = bl_row["rh_pct"]
+    msg["wind_dir_deg"]  = bl_row["wind_dir_deg"]
+    msg["wind_speed_ms"] = bl_row["wind_speed_ms"]
+    msg["mri"]           = bl_row["mri"]
+
+    return msg
 

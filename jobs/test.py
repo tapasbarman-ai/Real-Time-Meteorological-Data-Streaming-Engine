@@ -47,4 +47,23 @@ ds = env.from_collection(
 map = ds.map(lambda x: x*2,output_type = Types.INT())
 
 map.print()
+env.execute("test_job")"""
+
+
+# filter function test
+
+"""from pyflink.common.typeinfo import Types
+from pyflink.datastream import StreamExecutionEnvironment
+
+env = StreamExecutionEnvironment.get_execution_environment()
+
+data = [10, 15, 20, 25, 30]
+
+ds = env.from_collection(
+    collection = data,
+    type_info = Types.INT()
+)
+
+filtered = ds.filter(lambda x:x >20)
+filtered.print()
 env.execute("test_job")"""

@@ -235,4 +235,85 @@ def merge_row(header, bl_row, sim_row):
     msg["mri"]           = bl_row["mri"]
 
     return msg
+
+
+# =========================================================
+# READ BOTH FILES
+# =========================================================
+# --- Boundary Layer ---
+if not os.path.isfile(BOUNDARY_FILE):
+    logger.critical(f"❌ Boundary-layer file not found: {BOUNDARY_FILE}")
+    sys.exit(1)
+
+logger.info(f"📄 Boundary file : {BOUNDARY_FILE}")
+
+with open(BOUNDARY_FILE, "r", encoding="latin-1") as f:
+    bl_raw = f.read()
+
+bl_lines    = bl_raw.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+bl_header   = parse_boundary_header(bl_lines)
+bl_rows     = parse_boundary_data(bl_lines)
+
+if not bl_header:
+    logger.critical("❌ Could not parse boundary-layer header.")
+    sys.exit(1)
+if not bl_rows:
+    logger.critical("❌ No data rows in boundary-layer file.")
+    sys.exit(1)
+
+logger.info(f"   Boundary rows  : {len(bl_rows)}")
+
+# --- Radiosonde Sim ---
+if not os.path.isfile(SIM_FILE):
+    logger.critical(f"❌ Sim file not found: {SIM_FILE}")
+    sys.exit(1)
+
+logger.info(f"📄 Sim file      : {SIM_FILE}")
+
+sim_rows = parse_sim_file(SIM_FILE)
+
+if not sim_rows:
+    logger.critical("❌ No data rows in sim file.")
+    sys.exit(1)
+
+logger.info(f"   Sim rows       : {len(sim_rows)}")
+
+# --- Match by same row count ---
+matched_count = min(len(bl_rows), len(sim_rows))
+logger.info(f"✅ Matched rows   : {matched_count}")
+
+logger.info("")
+logger.info("📋 Static header fields:")
+for k, v in bl_header.items():
+    logger.info(f"   {k:<35} = {v}")
+
+
+# =========================================================
+# KAFKA PRODUCER
+# =========================================================
+prod_conf = producer_config.copy()
+prod_conf.update({
+    "client.id":         "radiosonde-combined-producer",
+    "acks":              "all",
+    "retries":           5,
+})
+producer = Producer(prod_conf)
+
+
+def delivery_report(err, msg):
+    if err:
+        logger.error(f"❌ Kafka delivery failed: {err}")
+    else:
+        logger.debug(
+            f"✔ Delivered → {msg.topic()} [{msg.partition()}] @ {msg.offset()}"
+        )
+
+
+logger.info(f"📡 Kafka broker  : {KAFKA_BROKER}")
+logger.info(f"📡 Kafka topic   : {KAFKA_TOPIC}")
+logger.info(f"⏱️  Interval      : {SEND_INTERVAL_SEC}s per row")
+logger.info("=================================================")
+logger.info("🔄 Streaming combined data — Ctrl+C to stop")
+logger.info("=================================================")
+
 
